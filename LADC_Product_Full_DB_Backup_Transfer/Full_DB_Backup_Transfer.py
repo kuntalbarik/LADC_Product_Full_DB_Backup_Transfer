@@ -75,26 +75,39 @@ for roots, dirs, files in os.walk(backupPath):
         endDate=0
         condition=True
         for roots,dirs,files in os.walk(backupPath1):
-           for i in range(32):
+           files = glob.glob(backupPath1 + '\\*.bak')
+           oldestFile = get_oldest_file(files)
+           if ("_01_01_" in (oldestFile) or "_03_01_" in (oldestFile) or
+                    "_05_01_" in (oldestFile) or "_07_01_" in (oldestFile) or
+                    "_08_01_" in (oldestFile) or "_10_01_" in (oldestFile) or
+                    "_12_01_" in (oldestFile)):
+                maxIterate = 31
+           elif ("_02_01_" in oldestFile):
+                maxIterate = 28
+                if (int(oldestFile[len(dir) + 8:len(dir) + 12]) % 4 == 0):
+                    maxIterate=29
+           else:
+                maxIterate = 30
+           for i in range(maxIterate):
                 files = glob.glob(backupPath1+'\\*.bak')
                 oldestFile=get_oldest_file(files)
                 directoryNameLength=len(dir)
                 tempFileName=oldestFile[95+directoryNameLength::]
+                moveToTemp1=r"D:\filesToMoveToTN\\"
                 moveToTemp=r"D:\filesToMoveToTN\\"+dir
                 if(os.path.isdir(moveToTemp)==False):
                     os.mkdir(moveToTemp)
                 modificationDate=modification_date(oldestFile)
-                if( modificationDate not in(days)and noOfFilesToMove<32 and fileSizeToMoveInByte<=524288000):
+                if( modificationDate not in(days)and noOfFilesToMove<maxIterate and fileSizeToMoveInByte<=263066746880):
                     filesToMove.append(oldestFile)
                     fileSizeToMoveInByte+=GetFileSize(oldestFile)
                     noOfFilesToMove+=1
                     shutil.move(oldestFile,moveToTemp+"\\"+tempFileName)
-                else:
+                if (noOfFilesToMove == maxIterate):
                     startFile=filesToMove[0]
                     endFile=filesToMove[len(filesToMove)-1]
-                    print(startFile,endFile)
+                    finalFoleder=(dir+"_full_backup_"+startFile[95+(2*len(dir))+9:95+(2*len(dir))+19]+"_to_"+
+                          endFile[95+(2*len(dir))+9:95+(2*len(dir))+19])
+                    os.rename(moveToTemp,moveToTemp1+finalFoleder)
+                    print("{} dropped on :-{} folder size :-{}".format(finalFoleder,str(date.today()),convert_bytes(fileSizeToMoveInByte)))
                     break
-
-
-
-
