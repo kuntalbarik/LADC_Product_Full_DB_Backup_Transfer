@@ -2,6 +2,9 @@
 import os, glob, time, operator
 from datetime import date, datetime, timedelta
 import shutil
+import csv,pandas as pd
+
+
 
 
 def modification_date(filename):
@@ -67,21 +70,23 @@ def get_oldest_file(files, _invert=False):
     return oldest[0]
 
 
-##log path
+##Report path
 logPath = "c:\\Full_DB_Archival_History"
 if (os.path.exists(logPath) == False):
     os.mkdir(logPath)
-##creating log file
-now = datetime.now()
-log_date = str(now)
-filepath = logPath + "\\log_" + log_date[0:11] + '.txt'
-fileobject = open(filepath, "a+")
-fileobject.close()
+##creating csv file for report
+csvData= [['Archival file name','Dropped on','Folder size']]
+
+log_date = str(datetime.now())
+csvFileName=logPath+"\\Full_DB_Archival_Report_"+log_date[0:10]+".csv"
+
+with open(csvFileName, 'w') as csvFile:
+    writer = csv.writer(csvFile)
+    writer.writerows(csvData)
 
 #backupPath = r"D:\laxisilon.pftla.local\Clear\ifs\PRODUCTION_BACKUPS\SQLDB\Full_Production_DB_Backup_Products"
 backupPath=r"\\laxisilon.pftla.local\Clear\ifs\PRODUCTION_BACKUPS\SQLDB\Full_Production_DB_Backup_Products"
 
-fileobject = open(filepath, "a+")
 for roots, dirs, files in os.walk(backupPath):
     for dir in dirs:
 
@@ -121,17 +126,21 @@ for roots, dirs, files in os.walk(backupPath):
                             2 * len(dir)) + 19] + "_to_" +
                                     endFile[94 + (2 * len(dir)) + 9:94 + (2 * len(dir)) + 19])
                     os.rename(moveToTemp, moveToTemp1 + finalFoleder)
-                    message = ("{} dropped on :-{} folder size :-{}\n".format(finalFoleder, str(date.today()),
-                                                                              convert_bytes(fileSizeToMoveInByte)))
-                    fileobject.write(message)
-                else:
-                    message = tempFileName + "is not 30 days older\n"
-                    fileobject.write(message)
+                    #message = ("{} dropped on :-{} folder size :-{}\n".format(finalFoleder, str(date.today()),convert_bytes(fileSizeToMoveInByte)))
+
+                    row = [finalFoleder, str(date.today()), convert_bytes(fileSizeToMoveInByte)]
+                    with open(csvFileName, 'a') as writeFile:
+                        writer = csv.writer(writeFile)
+                        writer.writerow(row)
+                        df = pd.read_csv(csvFileName)
+                        # Droping the empty rows
+                        modifiedDF = df.dropna()
+                        # Saving it to the csv file
+                        modifiedDF.to_csv(csvFileName, index=False)
 
             else:
                 ###if month has 31 days max 31 files can be clubbed in 1 folder
-                if (
-                        "_01_01_" or "_03_01_" or "_05_01_" or "_07_01_" or "_08_01_" or "_10_01_" or "_12_01_" in oldestFile):
+                if ("_01_01_" or "_03_01_" or "_05_01_" or "_07_01_" or "_08_01_" or "_10_01_" or "_12_01_" in oldestFile):
                     maxIterate = 31
                 ###if month is feb check leap year and decide max number of files can be clubbed in single folder
                 elif ("_02_01_" in oldestFile):
@@ -148,8 +157,7 @@ for roots, dirs, files in os.walk(backupPath):
                     files = glob.glob(backupPath1 + '\\*.bak')
                     oldestFile = get_oldest_file(files)
                     modificationDate = modification_date(oldestFile)
-                    if (
-                            modificationDate not in days and noOfFilesToMove < maxIterate and fileSizeToMoveInByte <= maxFolderSizeCanBeArchived):
+                    if (modificationDate not in days and noOfFilesToMove < maxIterate and fileSizeToMoveInByte <= maxFolderSizeCanBeArchived):
                         tempFileName = oldestFile[94 + directoryNameLength::]
                         filesToMove.append(oldestFile)
                         fileSizeToMoveInByte += GetFileSize(oldestFile)
@@ -168,11 +176,16 @@ for roots, dirs, files in os.walk(backupPath):
                                 2 * len(dir)) + 19] + "_to_" +
                                         endFile[94 + (2 * len(dir)) + 9:94 + (2 * len(dir)) + 19])
                         os.rename(moveToTemp, moveToTemp1 + finalFoleder)
-                        message = "{} dropped on :-{} folder size :-{}\n".format(finalFoleder, str(date.today()),
-                                                                                 convert_bytes(
-                                                                                     fileSizeToMoveInByte))
-                        fileobject.write(message)
+                        #message = "{} dropped on :-{} folder size :-{}\n".format(finalFoleder, str(date.today()),convert_bytes(fileSizeToMoveInByte))
+                        row = [finalFoleder, str(date.today()), convert_bytes(fileSizeToMoveInByte)]
+                        with open(csvFileName, 'a') as writeFile:
+                            writer = csv.writer(writeFile)
+                            writer.writerow(row)
+                            df = pd.read_csv(csvFileName)
+                            # Droping the empty rows
+                            modifiedDF = df.dropna()
+                            # Saving it to the csv file
+                            modifiedDF.to_csv(csvFileName, index=False)
 
 message = "-----------------------------------------------------------------------------------------------------------------------\n"
-fileobject.write(message)
-fileobject.close()
+
